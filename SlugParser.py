@@ -6,6 +6,8 @@ import ply.lex as lex
 import ply.yacc as yacc
 import sys
 import os
+import logging
+import copy
 
 
 class BaseParser(object):
@@ -34,49 +36,141 @@ class BaseParser(object):
                   debug=self.debug,
                   debugfile=self.debugfile,
                   tabmodule=self.tabmodule)
+        self.__parse_result__ = None
+        self.logger = logging.getLogger(__name__)
+
+    def parse(self, input_line):
+        self.logger.debug('parseing: %s' % input_line)
+        self.__parse_result__ = None
+        yacc.parse(input_line)
+        return self.__parse_result__
 
 
-class SlugParser(object):
-    # def run(self):
-    #     while 1:
-    #         try:
-    #             s = input('calc > ')
-    #         except EOFError:
-    #             break
-    #         if not s:
-    #             continue
-    #         yacc.parse(s)
-    pass
-
+class SlugParser(BaseParser):
+    # tokenizing
     tokens = (
         'GREAT',  # >
         'LESS',  # >
         'GREATGREAT',  # >>
         'GREATAMPERSAND',  # >&
+        'GREATGREATAMPERSAND',  # >&
         'PIPE',  # |
         'AMPERSAND',  # &
-        'WORD'
+        'WORD',
+        'NEWLINE',
     )
 
     t_GREAT = r'>'
     t_LESS = r'<'
     t_GREATGREAT = r'>>'
     t_GREATAMPERSAND = r'>&'
-    t_PIPE = r'|'
+    t_PIPE = r'\|'
     t_AMPERSAND = r'&'
 
     t_WORD = r'([a-zA-Z0-9_\-\.\*]+)|(".*?")|(\'.*?\')'
 
     t_ignore = " \t"
 
-    def t_newline(self, t):
+    def t_NEWLINE(self, t):
         r'\n+'
         t.lexer.lineno += t.value.count("\n")
+        return t
 
     def t_error(self, t):
         print("Illegal character '%s'" % t.value[0])
         t.lexer.skip(1)
 
+    # parsing
+    def p_cmd_and_args(self, p):
+        """
+        cmd_and_args : WORD arg_list
+        """
+        self.logger.debug('CMD_ARG rhs: WORD: %s' % p[1])
+        self.logger.debug('CMD_ARG rhs: arg_list: %s' % p[2])
+        p[0] = {
+            'cmd': p[1],
+            'args': p[2]
+        }
 
-if __name__ == '__main__':
-    parser = BaseParser(debug=True)
+    def p_arg_list(self, p):
+        """
+        arg_list : arg_list WORD
+                 |
+        """
+        if len(p) > 1:
+            self.logger.debug('ARG_LIST rhs: arg_list: %s' % p[1])
+            self.logger.debug('ARG_LIST rhs: WORD: %s' % p[2])
+            p[1].append(p[2])
+            p[0] = p[1]
+        else:
+            self.logger.debug('ARG_LIST empty rule')
+            p[0] = []
+
+    def p_pipe_list(self, p):
+        """
+        pipe_list : pipe_list PIPE cmd_and_args
+                  | cmd_and_args
+        """
+        if len(p) == 2:
+            p[0] = [p[1]]
+        else:
+            p[1].append(p[3])
+            p[0] = p[1]
+        self.logger.debug('PIPE_LIST ' + str(p[0]))
+
+    def p_io_modifier(self, p):
+        """
+        io_modifier : GREATGREAT WORD
+                    | GREAT WORD
+                    | GREATGREATAMPERSAND WORD
+                    | GREATAMPERSAND WORD
+                    | LESS WORD
+        """
+        modifier = {
+            'type': p[1],
+            'file': p[2]
+        }
+        p[0] = modifier
+        self.logger.debug("IO_MODIFIER " + str(p[0]))
+
+    def p_io_modifier_list(self, p):
+        """
+        io_modifier_list : io_modifier_list io_modifier
+                         |
+        """
+        if len(p) > 1:
+            p[1].append(p[2])
+            p[0] = p[1]
+        else:
+            p[0] = []
+        self.logger.debug("IO_MODIFIER_LIST " + str(p[0]))
+
+    def p_background_opt(self, p):
+        """
+        background_opt : AMPERSAND
+                       |
+        """
+        p[0] = len(p) > 1  # true if "&" exist and means do it in background.
+        self.logger.debug("BACKGROUND_OPT " + str(p[0]))
+
+    def p_command_line(self, p):
+        """
+        command_line : pipe_list io_modifier_list background_opt NEWLINE
+                     | NEWLINE
+        """
+        if len(p) > 2:
+            self.__parse_result__ = {
+                'pipe_list': p[1],
+                'io_modifier_list': p[2],
+                'background_opt': p[3],
+            }
+        else:
+            self.__parse_result__ = None
+
+    def p_error(self, p):
+        if p:
+            self.logger.error("Syntax error at '%s'" % p.value)
+        else:
+            self.logger.error("Syntax error at EOF")
+
+    start = 'command_line'

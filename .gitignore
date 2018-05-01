@@ -1,2 +1,8 @@
 .idea
 venv
+*.dbg
+*_parsetab.py
+.coverage
+htmlcov
+.coveragerc
+coverage.sh
