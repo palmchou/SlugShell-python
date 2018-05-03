@@ -9,6 +9,7 @@ import os
 import logging
 import copy
 
+from SlugStructure import SingleCommand, Command
 
 class BaseParser(object):
     """
@@ -87,10 +88,7 @@ class SlugParser(BaseParser):
         """
         self.logger.debug('CMD_ARG rhs: WORD: %s' % p[1])
         self.logger.debug('CMD_ARG rhs: arg_list: %s' % p[2])
-        p[0] = {
-            'cmd': p[1],
-            'args': p[2]
-        }
+        p[0] = SingleCommand(p[1], p[2])
 
     def p_arg_list(self, p):
         """
@@ -159,11 +157,7 @@ class SlugParser(BaseParser):
                      | NEWLINE
         """
         if len(p) > 2:
-            self.__parse_result__ = {
-                'pipe_list': p[1],
-                'io_modifier_list': p[2],
-                'background_opt': p[3],
-            }
+            self.__parse_result__ = Command(p[1], p[2], p[3])
         else:
             self.__parse_result__ = None
 
