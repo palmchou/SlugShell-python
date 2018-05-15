@@ -13,6 +13,9 @@ class SingleCommand(object):
     def __repr__(self):
         return self.__str__()
 
+    def to_list(self):
+        return [self.cmd] + self.args
+
 
 class Command(object):
 

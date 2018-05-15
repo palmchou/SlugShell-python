@@ -1,8 +1,10 @@
 # coding=utf-8
 from SlugStructure import SingleCommand
 import os
+import sys
 
 INPUT_LEN = 255
+
 
 class Builtin(object):
 
@@ -19,20 +21,14 @@ class Builtin(object):
         return 0
 
     def builtin_history(self, *args):
-        if(os.path.isfile(self.shell.var_HISTORY_FILE_PATH)):#todo
+        if os.path.isfile(self.shell.var_HISTORY_FILE_PATH):
             with open(self.shell.var_HISTORY_FILE_PATH) as history_file_FD:
                 lines = history_file_FD.readlines()
                 for line in lines:
                     print(line, end='')
 
-        elif(os.path.isfile(self.shell.mp_HISTORY_FD)):
-            with open(self.shell.tmp_HISTORY_FD) as tmp_file_FD:
-                lines = tmp_file_FD.readlines()
-                for line in lines:
-                    print(line, end='')
         else:
             print('printing commands history failed', file=sys.stderr)
-
 
     builtin_list = {
         'exit': builtin_exit,
@@ -46,4 +42,3 @@ class Builtin(object):
 
     def exec(self, cmd: SingleCommand) -> int:
         return self.builtin_list[cmd.cmd](self, *cmd.args)
-        print(cmd.cmd)

@@ -6,3 +6,5 @@ venv
 htmlcov
 .coveragerc
 coverage.sh
+.DS_Store
+__pycache__
