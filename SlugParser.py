@@ -68,7 +68,7 @@ class SlugParser(BaseParser):
     t_PIPE = r'\|'
     t_AMPERSAND = r'&'
 
-    t_WORD = r'([a-zA-Z0-9_\-\.\*]+)|(".*?")|(\'.*?\')'
+    t_WORD = r'([a-zA-Z0-9_\-\.\*~/]+)|(".*?")|(\'.*?\')'
 
     t_ignore = " \t"
 

@@ -5,6 +5,7 @@ from SlugBuiltin import Builtin
 import subprocess
 from tempfile import mkstemp
 import os
+from SlugUtils import eprint
 
 
 class SlugShell(object):
@@ -15,20 +16,20 @@ class SlugShell(object):
         self.debug = debug
 
         history_file_name = ".slugsh_history"
-        var_HOME = os.getenv("HOME")
-        var_PWD = os.getenv("PWD")
+        self.var_HOME = os.getenv("HOME")
+        self.var_PWD = os.getenv("PWD")
 
-        self.var_HISTORY_FILE_PATH = os.path.join(var_HOME, history_file_name)
+        self.var_HISTORY_FILE_PATH = os.path.join(self.var_HOME, history_file_name)
 
         try:
-            os.chdir(var_PWD)
+            os.chdir(self.var_PWD)
         except FileNotFoundError as e:
-            var_PWD = var_HOME
-            os.chdir(var_PWD)
+            self.var_PWD = self.var_HOME
+            os.chdir(self.var_PWD)
 
     def main_loop(self):
         while True:
-            shell_input = input("SlugShell $ ") + '\n'
+            shell_input = input(self.__get_prompt__()) + '\n'
             command = self.parser.parse(shell_input)
             if command:  # only record legal parsed command
                 self.write_history(shell_input)
@@ -47,7 +48,16 @@ class SlugShell(object):
         if self.builtin.isBuiltin(sgl_cmd.cmd):
             self.last_status = self.builtin.exec(sgl_cmd)
         else:
-            subprocess.run(sgl_cmd.to_list())
+            try:
+                subprocess.run(sgl_cmd.to_list())
+            except FileNotFoundError as e:
+                eprint("slugshell: No such file or directory: %s" % sgl_cmd.cmd)
+
+    def __get_prompt__(self):
+        dir_path = self.var_PWD
+        if dir_path.startswith(self.var_HOME):
+            dir_path = "~" + dir_path[len(self.var_HOME):]
+        return "SlugShell@%s $ " % dir_path
 
     def write_history(self, shell_input):
         with open(self.var_HISTORY_FILE_PATH, 'a') as history_file_FD:
