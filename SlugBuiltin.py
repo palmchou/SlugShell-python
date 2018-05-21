@@ -61,12 +61,18 @@ class Builtin(object):
             except FileNotFoundError as e:
                 eprint("cd: no such file or directory: %s" % dst)
                 return 3
+    
+    def builtin_slugshell(self, *args):
+        slugshell_img_file_name = open('SlugAsciiImg','r')
+        print(slugshell_img_file_name.read())
+        slugshell_img_file_name.close()
 
     builtin_list = {
         'exit': builtin_exit,
         'status': builtin_status,
         'history': builtin_history,
         'cd': builtin_cd,
+        'slugshell': builtin_slugshell,
     }
 
     @staticmethod
