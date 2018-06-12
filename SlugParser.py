@@ -11,6 +11,7 @@ import copy
 
 from SlugStructure import SingleCommand, Command
 
+
 class BaseParser(object):
     """
     Base class for a lexer/parser that has the rules defined as methods
@@ -98,6 +99,8 @@ class SlugParser(BaseParser):
         if len(p) > 1:
             self.logger.debug('ARG_LIST rhs: arg_list: %s' % p[1])
             self.logger.debug('ARG_LIST rhs: WORD: %s' % p[2])
+            if len(p[2]) and p[2][0] in ['"', "'"]:
+                p[2] = p[2][1:-1]
             p[1].append(p[2])
             p[0] = p[1]
         else:
